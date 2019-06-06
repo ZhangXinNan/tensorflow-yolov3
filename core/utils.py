@@ -88,8 +88,9 @@ def draw_bbox(image, bboxes, classes=read_class_names(cfg.YOLO.CLASSES), show_la
         if show_label:
             bbox_mess = '%s: %.2f' % (classes[class_ind], score)
             t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick//2)[0]
+            # 画框
             cv2.rectangle(image, c1, (c1[0] + t_size[0], c1[1] - t_size[1] - 3), bbox_color, -1)  # filled
-
+            # 写上类别名和置信度
             cv2.putText(image, bbox_mess, (c1[0], c1[1]-2), cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale, (0, 0, 0), bbox_thick//2, lineType=cv2.LINE_AA)
 
@@ -98,19 +99,22 @@ def draw_bbox(image, bboxes, classes=read_class_names(cfg.YOLO.CLASSES), show_la
 
 
 def bboxes_iou(boxes1, boxes2):
-
+    '''计算两个矩形框的交并比
+    '''
     boxes1 = np.array(boxes1)
     boxes2 = np.array(boxes2)
-
+    # 求面积
     boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
     boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])
 
     left_up       = np.maximum(boxes1[..., :2], boxes2[..., :2])
     right_down    = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
-
+    # 交集的面积
     inter_section = np.maximum(right_down - left_up, 0.0)
     inter_area    = inter_section[..., 0] * inter_section[..., 1]
+    # 并集的面积
     union_area    = boxes1_area + boxes2_area - inter_area
+    # 交并比
     ious          = np.maximum(1.0 * inter_area / union_area, np.finfo(np.float32).eps)
 
     return ious
@@ -136,18 +140,23 @@ def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
     Note: soft-nms, https://arxiv.org/pdf/1704.04503.pdf
           https://github.com/bharatsingh430/soft-nms
     """
+    # 得到所有类别的集合
     classes_in_img = list(set(bboxes[:, 5]))
     best_bboxes = []
 
     for cls in classes_in_img:
+        # 对每个类别分别进行处理
         cls_mask = (bboxes[:, 5] == cls)
+        # 每个类别的所有框
         cls_bboxes = bboxes[cls_mask]
 
         while len(cls_bboxes) > 0:
+            # 先找物体概率最大的，作为最佳框
             max_ind = np.argmax(cls_bboxes[:, 4])
             best_bbox = cls_bboxes[max_ind]
             best_bboxes.append(best_bbox)
             cls_bboxes = np.concatenate([cls_bboxes[: max_ind], cls_bboxes[max_ind + 1:]])
+            # 计算最佳框与其它的交并比
             iou = bboxes_iou(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             weight = np.ones((len(iou),), dtype=np.float32)
 
@@ -172,8 +181,11 @@ def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
     valid_scale=[0, np.inf]
     pred_bbox = np.array(pred_bbox)
 
+    # 坐标
     pred_xywh = pred_bbox[:, 0:4]
+    # 物体的概率
     pred_conf = pred_bbox[:, 4]
+    # 类别的置信度
     pred_prob = pred_bbox[:, 5:]
 
     # # (1) (x, y, w, h) --> (xmin, ymin, xmax, ymax)

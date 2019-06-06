@@ -27,6 +27,7 @@ preserve_org_names = ['Conv_6', 'Conv_14', 'Conv_22']
 
 org_weights_mess = []
 tf.Graph().as_default()
+# ./checkpoint/yolov3_coco.ckpt.meta
 load = tf.train.import_meta_graph(org_weights_path + '.meta')
 with tf.Session() as sess:
     load.restore(sess, org_weights_path)

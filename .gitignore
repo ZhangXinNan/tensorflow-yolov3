@@ -16,3 +16,23 @@ bin-release/
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+
+
+.DS_Store
+*.tar.gz
+
+# checkpoint
+checkpoint/yolov3_coco.ckpt.data-00000-of-00001
+checkpoint/yolov3_coco.ckpt.index
+checkpoint/yolov3_coco.ckpt.meta
+checkpoint/yolov3_coco_demo.ckpt.*
+
+# python
+*.pyc
+*.log
+yolov3_coco.pb
+
+.vscode/
+
+
+
