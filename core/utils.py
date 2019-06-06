@@ -144,7 +144,7 @@ def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
     best_bboxes = []
 
     for cls in classes_in_img:
-        printf("依次每个类：", cls)
+        print("依次每个类：", cls)
         cls_mask = (bboxes[:, 5] == cls)
         cls_bboxes = bboxes[cls_mask]
 
