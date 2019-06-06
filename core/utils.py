@@ -44,10 +44,13 @@ def image_preporcess(image, target_size, gt_boxes=None):
 
     scale = min(iw/w, ih/h)
     nw, nh  = int(scale * w), int(scale * h)
+    print("输入图像尺寸：", w, h)
+    print("缩放后图像尺寸：", nw, nh)
     image_resized = cv2.resize(image, (nw, nh))
 
     image_paded = np.full(shape=[ih, iw, 3], fill_value=128.0)
     dw, dh = (iw - nw) // 2, (ih-nh) // 2
+    print("扩充尺寸：", dw, dh)
     image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
     image_paded = image_paded / 255.
 
@@ -141,27 +144,32 @@ def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
           https://github.com/bharatsingh430/soft-nms
     """
     # 得到所有类别的集合
+    print("------- utils.py ------nms")
+
     classes_in_img = list(set(bboxes[:, 5]))
     best_bboxes = []
 
     for cls in classes_in_img:
         # 对每个类别分别进行处理
+        print("依次每个类：", cls)
         cls_mask = (bboxes[:, 5] == cls)
         # 每个类别的所有框
         cls_bboxes = bboxes[cls_mask]
 
         while len(cls_bboxes) > 0:
-            # 先找物体概率最大的，作为最佳框
+            # 先找到这个类中，置信度最大的框，放入最佳框列表
             max_ind = np.argmax(cls_bboxes[:, 4])
             best_bbox = cls_bboxes[max_ind]
             best_bboxes.append(best_bbox)
+            # 最佳框去除
             cls_bboxes = np.concatenate([cls_bboxes[: max_ind], cls_bboxes[max_ind + 1:]])
-            # 计算最佳框与其它的交并比
+            # 当前最佳框 与 剩下的框进行比较
+
             iou = bboxes_iou(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             weight = np.ones((len(iou),), dtype=np.float32)
 
             assert method in ['nms', 'soft-nms']
-
+            # 过滤iou 小于 阈值的部分，小的weight为0
             if method == 'nms':
                 iou_mask = iou > iou_threshold
                 weight[iou_mask] = 0.0
@@ -177,7 +185,7 @@ def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
 
 
 def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
-
+    print("----postprocess_boxes----------")
     valid_scale=[0, np.inf]
     pred_bbox = np.array(pred_bbox)
 
@@ -197,6 +205,11 @@ def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
 
     dw = (input_size - resize_ratio * org_w) / 2
     dh = (input_size - resize_ratio * org_h) / 2
+    print("将预测结果，根据原图像尺寸和网络输入尺寸，再变换回原来的位置。")
+    print("原图像尺寸", org_w, org_w)
+    print("网络输入尺寸", input_size)
+    print("resize_ratio: ", resize_ratio)
+    print("扩充比例：", dw, dh)
 
     pred_coor[:, 0::2] = 1.0 * (pred_coor[:, 0::2] - dw) / resize_ratio
     pred_coor[:, 1::2] = 1.0 * (pred_coor[:, 1::2] - dh) / resize_ratio
@@ -205,14 +218,20 @@ def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
     pred_coor = np.concatenate([np.maximum(pred_coor[:, :2], [0, 0]),
                                 np.minimum(pred_coor[:, 2:], [org_w - 1, org_h - 1])], axis=-1)
     invalid_mask = np.logical_or((pred_coor[:, 0] > pred_coor[:, 2]), (pred_coor[:, 1] > pred_coor[:, 3]))
+    print("(3) pred_coor : ")
+    print(pred_coor)
+    print(" invalid_mask : ")
+    print(invalid_mask)
     pred_coor[invalid_mask] = 0
 
     # # (4) discard some invalid boxes
     bboxes_scale = np.sqrt(np.multiply.reduce(pred_coor[:, 2:4] - pred_coor[:, 0:2], axis=-1))
     scale_mask = np.logical_and((valid_scale[0] < bboxes_scale), (bboxes_scale < valid_scale[1]))
+    print("(4) 这里没有限制大小??", bboxes_scale.shape, scale_mask.shape)
 
     # # (5) discard some boxes with low scores
     classes = np.argmax(pred_prob, axis=-1)
+    print("(5) 取分类概率最大的类：", pred_prob.shape, classes.shape)
     scores = pred_conf * pred_prob[np.arange(len(pred_coor)), classes]
     score_mask = scores > score_threshold
     mask = np.logical_and(scale_mask, score_mask)

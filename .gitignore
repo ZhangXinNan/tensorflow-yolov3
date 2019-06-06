@@ -26,13 +26,11 @@ checkpoint/yolov3_coco.ckpt.data-00000-of-00001
 checkpoint/yolov3_coco.ckpt.index
 checkpoint/yolov3_coco.ckpt.meta
 checkpoint/yolov3_coco_demo.ckpt.*
+yolov3_coco.pb
 
 # python
 *.pyc
 *.log
-yolov3_coco.pb
 
 .vscode/
-
-
 
