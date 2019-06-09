@@ -26,6 +26,7 @@ checkpoint/yolov3_coco.ckpt.data-00000-of-00001
 checkpoint/yolov3_coco.ckpt.index
 checkpoint/yolov3_coco.ckpt.meta
 checkpoint/yolov3_coco_demo.ckpt.*
+checkpoint/yolov3_test_loss*
 yolov3_coco.pb
 
 # python
@@ -33,4 +34,8 @@ yolov3_coco.pb
 *.log
 
 .vscode/
+checkpoint_zx/
+data/log/
+data/dataset_zx/
+
 
